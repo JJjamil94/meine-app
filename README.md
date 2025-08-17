@@ -4,6 +4,32 @@ import AVFoundation
 import Speech
 import Foundation
 
+// MARK: - Dark Theme (OpenAI-like)
+struct Theme {
+    static let background = Color(red: 0.07, green: 0.07, blue: 0.08) // near-black
+    static let elevated1 = Color(red: 0.12, green: 0.12, blue: 0.13) // cards/controls
+    static let elevated2 = Color(red: 0.16, green: 0.16, blue: 0.18) // bubbles/secondary
+    static let border = Color.white.opacity(0.08)
+    static let textPrimary = Color.white
+    static let textSecondary = Color.white.opacity(0.65)
+    static let accent = Color(red: 16.0/255.0, green: 163.0/255.0, blue: 127.0/255.0) // OpenAI green
+    static let accentSecondary = Color(red: 58.0/255.0, green: 142.0/255.0, blue: 246.0/255.0)
+    static let danger = Color(red: 1.0, green: 59.0/255.0, blue: 48.0/255.0)
+}
+
+extension View {
+    func cardStyle(cornerRadius: CGFloat = 12) -> some View {
+        self
+            .background(RoundedRectangle(cornerRadius: cornerRadius).fill(Theme.elevated1))
+            .overlay(RoundedRectangle(cornerRadius: cornerRadius).stroke(Theme.border))
+    }
+    func pillStyle() -> some View {
+        self
+            .background(Capsule().fill(Theme.elevated2))
+            .overlay(Capsule().stroke(Theme.border))
+    }
+}
+
 // Global chat message model so OpenAIClient and ChatView share the same type
 struct ChatMessage: Identifiable { let id = UUID(); let role: String; let text: String }
 
@@ -200,11 +226,11 @@ struct LearnHomeView: View {
                             HStack {
                                 Text(plan.title).font(.headline)
                                 Spacer()
-                                Text("\(plan.dailyTarget) sentences/day").foregroundStyle(.secondary)
+                                Text("\(plan.dailyTarget) sentences/day").foregroundColor(Theme.textSecondary)
                             }
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(RoundedRectangle(cornerRadius: 12).fill(Color.gray.opacity(0.12)))
+                            .cardStyle()
                         }
                         .buttonStyle(.plain)
                         .padding(.horizontal)
@@ -212,6 +238,9 @@ struct LearnHomeView: View {
                     Spacer()
                 }
                 .navigationTitle("Choose your plan")
+                .foregroundColor(Theme.textPrimary)
+                .tint(Theme.accent)
+                .background(Theme.background.ignoresSafeArea())
             }
         }
     }
@@ -244,7 +273,7 @@ struct StudyView: View {
                 Spacer()
                 Text("\(doneCount)/\(target)")
                     .padding(6)
-                    .background(Capsule().fill(Color.gray.opacity(0.15)))
+                    .pillStyle()
             }.padding(.horizontal)
 
             HStack {
@@ -268,7 +297,11 @@ struct StudyView: View {
 
                 if mode == .typing {
                     TextField("Type your translation", text: $userText)
-                        .textFieldStyle(.roundedBorder)
+                        .padding(12)
+                        .background(Theme.elevated1)
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border))
+                        .cornerRadius(10)
+                        .tint(Theme.accent)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
                         .padding(.horizontal)
@@ -278,7 +311,7 @@ struct StudyView: View {
                         Text("Check answer")
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
-                            .background(Color.blue)
+                            .background(Theme.accent)
                             .foregroundColor(.white)
                             .cornerRadius(12)
                     }.padding(.horizontal)
@@ -294,11 +327,12 @@ struct StudyView: View {
                             Spacer()
                         }
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundColor(Theme.textSecondary)
 
                         TextEditor(text: Binding(get:{ speech.transcript }, set:{ speech.transcript = $0 }))
                             .frame(minHeight:80,maxHeight:120)
-                            .overlay(RoundedRectangle(cornerRadius:8).stroke(Color.gray.opacity(0.3)))
+                            .background(Theme.elevated1)
+                            .overlay(RoundedRectangle(cornerRadius:8).stroke(Theme.border))
                             .padding(.horizontal)
 
                         HStack {
@@ -312,7 +346,7 @@ struct StudyView: View {
                                 Text(speech.isRecording ? "Stop recording" : "Start recording")
                                     .frame(maxWidth:.infinity)
                                     .padding(.vertical,10)
-                                    .background(speech.isRecording ? Color.red : Color.blue)
+                                    .background(speech.isRecording ? Theme.danger : Theme.accent)
                                     .foregroundColor(.white)
                                     .cornerRadius(10)
                             }
@@ -324,7 +358,7 @@ struct StudyView: View {
                                 Text("Check answer")
                                     .frame(maxWidth:.infinity)
                                     .padding(.vertical,10)
-                                    .background(Color.green)
+                                    .background(Theme.accentSecondary)
                                     .foregroundColor(.white)
                                     .cornerRadius(10)
                             }
@@ -334,11 +368,11 @@ struct StudyView: View {
                 }
 
                 Text(feedback)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(Theme.textSecondary)
                     .padding(.horizontal)
             } else {
                 Text("Loading…")
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(Theme.textSecondary)
                     .onAppear { startSession() }
             }
 
@@ -353,6 +387,9 @@ struct StudyView: View {
                 checkAnswer()
             }
         }
+        .foregroundColor(Theme.textPrimary)
+        .tint(Theme.accent)
+        .background(Theme.background.ignoresSafeArea())
     }
 
     func startSession() {
@@ -407,17 +444,17 @@ struct SuccessView: View {
             Text("\(planTitle) completed successfully.").font(.title3)
             Text("Great work! Keep going — repetition makes it stick.")
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                .foregroundColor(Theme.textSecondary)
                 .padding(.horizontal)
             Text("🔥 Streak: \(streak) days in a row")
                 .padding(8)
-                .background(Capsule().fill(Color.orange.opacity(0.15)))
+                .pillStyle()
             HStack {
                 Button { onRepeat() } label: {
                     Text("Practice again")
                         .frame(maxWidth:.infinity)
                         .padding(.vertical,12)
-                        .background(Color.blue)
+                        .background(Theme.accent)
                         .foregroundColor(.white)
                         .cornerRadius(12)
                 }
@@ -425,7 +462,7 @@ struct SuccessView: View {
                     Text("Share")
                         .frame(maxWidth:.infinity)
                         .padding(.vertical,12)
-                        .background(Color.green)
+                        .background(Theme.accentSecondary)
                         .foregroundColor(.white)
                         .cornerRadius(12)
                 }
@@ -466,15 +503,17 @@ struct ChatView: View {
                         HStack {
                             if m.role == "assistant" {
                                 Text(m.text)
-                                    .padding(10)
-                                    .background(Color.gray.opacity(0.12))
+                                    .padding(12)
+                                    .background(Theme.elevated2)
+                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border))
                                     .cornerRadius(10)
                                 Spacer()
                             } else {
                                 Spacer()
                                 Text(m.text)
-                                    .padding(10)
-                                    .background(Color.blue.opacity(0.15))
+                                    .padding(12)
+                                    .background(Theme.accent.opacity(0.18))
+                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border))
                                     .cornerRadius(10)
                             }
                         }
@@ -483,7 +522,7 @@ struct ChatView: View {
             }
 
             if let err = errorText {
-                Text(err).foregroundColor(.red).font(.footnote).padding(.horizontal)
+                Text(err).foregroundColor(Theme.danger).font(.footnote).padding(.horizontal)
             }
 
             HStack(spacing: 8) {
@@ -496,7 +535,11 @@ struct ChatView: View {
                 }
 
                 TextField("Type here…", text: $inputText)
-                    .textFieldStyle(.roundedBorder)
+                    .padding(10)
+                    .background(Theme.elevated1)
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border))
+                    .cornerRadius(10)
+                    .tint(Theme.accent)
 
                 Button { Task { await send() } } label: {
                     if busy { ProgressView() } else { Image(systemName: "paperplane.fill") }
@@ -505,6 +548,9 @@ struct ChatView: View {
             }
             .padding()
         }
+        .foregroundColor(Theme.textPrimary)
+        .tint(Theme.accent)
+        .background(Theme.background.ignoresSafeArea())
         .navigationTitle("AI Chat")
     }
 
@@ -538,6 +584,9 @@ struct ContentView: View {
             ChatView()
                 .tabItem { Label("Chat", systemImage: "bubble.left.and.bubble.right.fill") }
         }
+        .tint(Theme.accent)
+        .background(Theme.background.ignoresSafeArea())
+        .preferredColorScheme(.dark)
     }
 }
 
